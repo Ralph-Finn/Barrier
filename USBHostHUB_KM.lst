@@ -1,0 +1,266 @@
+C51 COMPILER V9.52.0.0   USBHOSTHUB_KM                                                     11/02/2017 16:18:18 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE USBHOSTHUB_KM
+OBJECT MODULE PLACED IN USBHostHUB_KM.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE USB\Host\USBHostHUB_KM.C LARGE BROWSE DEBUG OBJECTEXTEND PRINT(.\USBHostHUB
+                    -_KM.lst) OBJECT(USBHostHUB_KM.obj)
+
+line level    source
+
+   1          /********************************** (C) COPYRIGHT *******************************
+   2          * File Name          : USBHostHUB_KM.C
+   3          * Author             : WCH
+   4          * Version            : V1.0
+   5          * Date               : 2017/01/20
+   6          * Description        :
+   7          *******************************************************************************/
+   8          #include ".\ComLib.C"
+*** WARNING C182 IN LINE 383 OF USB\Host\.\ComLib.C: pointer to different objects
+*** WARNING C280 IN LINE 358 OF USB\Host\.\ComLib.C: 'full': unreferenced local variable
+*** WARNING C182 IN LINE 458 OF USB\Host\.\ComLib.C: pointer to different objects
+*** WARNING C182 IN LINE 490 OF USB\Host\.\ComLib.C: pointer to different objects
+*** WARNING C182 IN LINE 536 OF USB\Host\.\ComLib.C: pointer to different objects
+*** WARNING C280 IN LINE 511 OF USB\Host\.\ComLib.C: 'full': unreferenced local variable
+   9          #include <stdio.h>
+  10          #include <string.h>
+  11          main( )
+  12          {  
+  13   1                UINT8 *com;
+  14   1          UINT8 s,len;
+  15   1          UINT8 buffer[64];
+  16   1          UINT16  loc;
+  17   1          CfgFsys( );
+  18   1          mInitSTDIO( );                                                              //?a¨¢?¨¨??????¨²¨ª¡§1y¡ä?
+             -?¨²?¨¤???Y¨º?1y3¨¬
+  19   1          initLight();//    ³õÊ¼»¯µÆµÄ×´Ì¬
+  20   1              printf( "Start @ChipID=%02X\n", (UINT16)CHIP_ID );
+  21   1          InitUSB_Host( );
+  22   1              printf( "Wait Device In\n" );
+  23   1              INIT_MODE:
+  24   1              while(1)
+  25   1              {
+  26   2              connestion_state = 1;
+  27   2          FoundNewDev = 0;
+  28   2                Usb_Adb_status = NOT_CONNECT;   
+  29   2                      setLight("OFFS","OFFS");                                                 //³õÊ¼×´Ì¬Ê½µÆÊÇ¹Ø±ÕµÄ
+  30   2                      s = ERR_SUCCESS;                                                         //²Ù×÷³É¹¦
+  31   2                      if ( UIF_DETECT )                                                        // Èç¹ûUSBÖ÷»ú¼ì²âµ½ÖÐ¶ÏÔò½øÐÐ´
+             -¦Àí
+  32   2                      {
+  33   3                                      UIF_DETECT = 0;                                                      // Çå³ýÖÐ¶Ï±êÖ¾
+  34   3                                      s = AnalyzeRootHub( );                                               // ·ÖÎöÖÐ¶ÏµÄ×´Ì¬
+  35   3                                      if ( s == ERR_USB_CONNECT )
+  36   3                                      {
+  37   4                                                      FoundNewDev = 1;
+  38   4                                                      setLight("ONON","QUICK");
+  39   4                                      }
+  40   3                      }
+  41   2                      if ( FoundNewDev )                                                       // Èç¹ûÓÐÐÂµÄUSBÉè±¸²åÈë
+  42   2                      {
+  43   3                                      FoundNewDev = 0;                                                     // µÈ´ýÎÈ¶¨
+  44   3                                      s = EnumAllRootDevice( );                                            // Ã¶¾ÙËùÓÐROOT-HUB¶Ë¿ÚµÄUSBÉè±¸
+  45   3                                      if ( s != ERR_SUCCESS )
+  46   3                                      {
+C51 COMPILER V9.52.0.0   USBHOSTHUB_KM                                                     11/02/2017 16:18:18 PAGE 2   
+
+  47   4                                                      printf( "EnumAllRootDev err = %02X\n", (UINT16)s );
+  48   4                                      }
+  49   3                      }
+  50   2                      loc = SearchTypeDevice( USB_DEV_SUBCLASS_ADB );
+  51   2                      if ( loc != 0xFFFF )                                                     // ÕÒµ½ÁËÉè±¸¡£
+  52   2                      {
+  53   3                              while(1)
+  54   3                              {
+  55   4                              switch( Usb_Adb_status ){
+  56   5                                      case NOT_CONNECT:
+  57   5                                              printf( "Query ADB @%04X\n", loc );
+  58   5                                              printf("\n\r ==============\n\r");
+  59   5                                              printf("\n START connection\n");
+  60   5                                              ADB_OutputData(adb_connect_command,sizeof(adb_connect_command),0xFFFF );
+  61   5                                              mDelaymS(5);
+  62   5                                              ADB_OutputData(adb_connect_param,sizeof(adb_connect_param) ,0xFFFF);
+  63   5                                        //ÅÐ¶ÏÊÕµ½µÄÖ¸ÁîÊÇ·ñÊÇAUTH¡§
+  64   5                                        com = ADB_InputData(buffer,&len,0xFFFF);
+  65   5                                              if(!HostIsLink()) 
+  66   5                                              {
+  67   6                                                      //Usb_Adb_status =NOT_CONNECT;
+  68   6                                                      goto INIT_MODE;
+  69   6                                              }
+  70   5                                              if(comper(com,"AUTH"))
+  71   5                                              {
+  72   6                                                      Usb_Adb_status =AUTH;
+  73   6                                                      ADB_InputData(buffer,&len,0xFFFF);
+  74   6                                              }
+  75   5                                              else if(comper(com,"CNXN"))
+  76   5                                              {
+  77   6                                                      Usb_Adb_status =DIFF;
+  78   6                                              }                                                                        
+  79   5                                              printf("\n END connection\n");
+  80   5                                              printf("\n\r ==============\n\r");
+  81   5                                      break;
+  82   5                                      case AUTH:
+  83   5                                        printf("\n\r ==============\n\r");
+  84   5                                              printf("\n START Auth command and data\n");
+  85   5                                              ADB_OutputData(adb_auth_command,sizeof(adb_auth_command),0xFFFF );
+  86   5                                              mDelaymS(15);
+  87   5                                              ADB_OutputData(adb_auth_param,sizeof(adb_auth_param),0xFFFF );
+  88   5                                              if(!HostIsLink()) goto INIT_MODE;
+  89   5                                              ADB_InputData(buffer,&len,0xFFFF);
+  90   5                                              ADB_InputData(buffer,&len,0xFFFF);
+  91   5                                              printf("\n END Auth command and data\n");
+  92   5                                              printf("\n\r ==============\n\r");
+  93   5                                              Usb_Adb_status = KEY_AUTH;
+  94   5                                      break;
+  95   5                                      case KEY_AUTH:
+  96   5                                              printf("\n\r ==============\n\r");
+  97   5                                              printf("\n START key command and data\n");
+  98   5                                              ADB_OutputData(adb_key_command,sizeof(adb_key_command),0xFFFF );
+  99   5                                              mDelaymS(15);
+ 100   5                                              ADB_OutputData(adb_public_key2,sizeof(adb_public_key2),0xFFFF );
+ 101   5                                              while(1){
+ 102   6                                                mDelaymS(20);
+ 103   6                                                      if(!HostIsLink()){ 
+ 104   7                                                      connestion_state = 0;
+ 105   7                                                      break;
+ 106   7                                                      }
+ 107   6                                                com = ADB_InputData(buffer,&len,0xFFFF);
+ 108   6                                                      if(comper(com,"CNXN"))  //Èç¹ûÊÕµ½ÁË²úÆ·ÐÅÏ¢£¬ÔòÌø³ö
+C51 COMPILER V9.52.0.0   USBHOSTHUB_KM                                                     11/02/2017 16:18:18 PAGE 3   
+
+ 109   6                                                      {       
+ 110   7                                                                      break;
+ 111   7                                                              }
+ 112   6                                                      }
+ 113   5                                              if(!connestion_state) goto INIT_MODE;
+ 114   5                                              printf("\n END key command and data\n");
+ 115   5                                              printf("\n\r ==============\n\r");
+ 116   5                                              Usb_Adb_status = DIFF;
+ 117   5                                      break;
+ 118   5                                      case DIFF:                              
+ 119   5                                              printf("\n\r ==============\n\r");
+ 120   5                                              printf("\n\r START diff in\n\r");
+ 121   5                                              ADB_OutputData(adb_diff_command,sizeof(adb_diff_command),0xFFFF );
+ 122   5                                              mDelaymS(15);
+ 123   5                                              ADB_OutputData(cmd_diff,sizeof(cmd_diff),0xFFFF );
+ 124   5                                              recvAdb(adb_diff_command,buffer,&len,"COMN");
+ 125   5                                              if(!connestion_state) goto INIT_MODE;
+ 126   5                                              printf("\n\r END diff in\n\r");
+ 127   5                                              printf("\n\r ==============\n\r");
+ 128   5                                      break;
+ 129   5                                      case INSTALL_APP:                               
+ 130   5                                              printf("\n\r ==============\n\r");
+ 131   5                                              printf("\n\r START INSTALL_APP\n\r");
+ 132   5                                              //send----->shell:am start -a android.intent.action.VIEW -d http://www.flydigi.com/Software/Motionelf
+             -.apk
+ 133   5                                              ADB_OutputData(adb_install_command,sizeof(adb_install_command),0xFFFF );
+ 134   5                                              mDelaymS(15);
+ 135   5                                              ADB_OutputData(cmd_installgamehall,sizeof(cmd_installgamehall),0xFFFF );
+ 136   5                                              recvAdb(adb_install_command,buffer,&len,"INST");
+ 137   5                                              if(!connestion_state) goto INIT_MODE;
+ 138   5                                              setLight("ONON","SLOW");
+ 139   5                                              printf("\n\r END dINSTALL_APP\n\r");
+ 140   5                                              printf("\n\r ==============\n\r");
+ 141   5                                              Usb_Adb_status = END;      //·´ÕýÎÞÂÛÈçºÎ¶¼Òª·µ»Ø×î¿ªÊ¼µÄ×´Ì¬
+ 142   5                                      break;
+ 143   5                                      case CAT:                               
+ 144   5                                              printf("\n\r ==============\n\r");
+ 145   5                                              printf("\n\r START diff in\n\r");
+ 146   5                                              ADB_OutputData(adb_cat_command,sizeof(adb_cat_command),0xFFFF );
+ 147   5                                              mDelaymS(15);
+ 148   5                                              ADB_OutputData(cmd_diff,sizeof(cmd_diff),0xFFFF );
+ 149   5                                              recvAdb(adb_diff_command,buffer,&len,"COMN");
+ 150   5                                              if(!connestion_state) goto INIT_MODE;
+ 151   5                                              printf("\n\r END diff in\n\r");
+ 152   5                                              printf("\n\r ==============\n\r");
+ 153   5                                      break;
+ 154   5                                      case CHMOD:
+ 155   5                                              printf("\n\r ==============\n\r");
+ 156   5                                              printf("\n START chmod\n");
+ 157   5                                              //send cmd---------->shell:chmod 777 ./data/local/tmp/motionelf_server
+ 158   5                                              ADB_OutputData(adb_chmod_command,sizeof(adb_chmod_command),0xFFFF );
+ 159   5                                              mDelaymS(15);
+ 160   5                                              ADB_OutputData(cmd_chmod111,sizeof(cmd_chmod111),0xFFFF );
+ 161   5                                              //recvCom(adb_chmod_command,buffer,&len);
+ 162   5                                              recvAdb(adb_chmod_command,buffer,&len,"COMN");
+ 163   5                                              if(!connestion_state) goto INIT_MODE;
+ 164   5                                              printf("\n END chmod\n");
+ 165   5                                              printf("\n\r ==============\n\r");
+ 166   5                                              Usb_Adb_status = START_DRIVE;
+ 167   5                                      break;
+ 168   5                                      
+ 169   5                                      case START_DRIVE:
+C51 COMPILER V9.52.0.0   USBHOSTHUB_KM                                                     11/02/2017 16:18:18 PAGE 4   
+
+ 170   5                                               printf("\n\r ==============\n\r");
+ 171   5                                               printf("\n START driver\n");
+ 172   5                                              ///////////step1,open shell///////////////////////////
+ 173   5                                               ADB_OutputData(adb_shell_command,sizeof(adb_shell_command),0xFFFF );
+ 174   5                                               mDelaymS(15);
+ 175   5                                               ADB_OutputData(cmd_shell,sizeof(cmd_shell),0xFFFF );
+ 176   5                                               recvAdb(adb_shell_command,buffer,&len,"SHEL");
+ 177   5                                               if(!connestion_state) goto INIT_MODE;
+ 178   5                                               if(comper(com,"CLSE")){
+ 179   6                                                      Usb_Adb_status = START_DRIVE;
+ 180   6                                                      continue;
+ 181   6                                               }
+ 182   5                                               ///////////step2,send 0x0A///////////////////////////
+ 183   5                                               changeCom(adb_tmp,cmd_0a);     //ÐÞ¸ÄÊä³öÖ¸Áî
+ 184   5                                               ADB_OutputData(cmd_0a,sizeof(cmd_0a),0xFFFF );
+ 185   5                                               mDelaymS(15);
+ 186   5                                               ADB_OutputData(&cmd,1,0xFFFF );
+ 187   5                                               recvAdb(adb_shell_command,buffer,&len,"SHEL");
+ 188   5                                               if(!connestion_state) goto INIT_MODE;
+ 189   5                                               if(comper(com,"CLSE")){
+ 190   6                                                      Usb_Adb_status = START_DRIVE;
+ 191   6                                                      continue;
+ 192   6                                               }
+ 193   5                                               ////step:3,send command ---->./data/local/tmp/motionelf_server&
+ 194   5                                               changeCom(adb_tmp,adb_drive_command);  //ÐÞ¸ÄÊä³öÖ¸Áî
+ 195   5                                               ADB_OutputData(adb_drive_command,sizeof(adb_drive_command),0xFFFF );
+ 196   5                                               mDelaymS(15);
+ 197   5                                               ADB_OutputData(cmd_motionelf,sizeof(cmd_motionelf),0xFFFF );
+ 198   5                                               recvAdb(adb_shell_command,buffer,&len,"DRIV");
+ 199   5                                               if(!connestion_state) goto INIT_MODE;
+ 200   5                                               Usb_Adb_status = ACTIVITY;                                                             
+ 201   5                              break;
+ 202   5                        
+ 203   5                              case ACTIVITY:
+ 204   5                                              printf("\n\r ==============\n\r");
+ 205   5                                              printf("\n START hall\n");
+ 206   5                                              //step 1:send open command,shell:am start -n com.game.motionelf/com.game.motionelf.activity.ActivityS
+             -tart -e action active_driver
+ 207   5                                              ADB_OutputData(adb_activity_command,sizeof(adb_activity_command),0xFFFF );
+ 208   5                                              mDelaymS(15);
+ 209   5                                              ADB_OutputData(cmd_startactivity,sizeof(cmd_startactivity),0xFFFF );
+ 210   5                                              recvAdb(adb_activity_command,buffer,&len,"HALL");
+ 211   5                                              if(!connestion_state) goto INIT_MODE;
+ 212   5                                              printf("\n END hall\n");
+ 213   5                                              printf("\n\r ==============\n\r");
+ 214   5                                              //setLight("ONON","ONON");
+ 215   5                                              //Usb_Adb_status = END;         
+ 216   5                                      break;
+ 217   5                                      case END:
+ 218   5                                      break;
+ 219   5                              }                       
+ 220   4          }
+ 221   3              }
+ 222   2      }
+ 223   1      }
+ 224          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   5929    ----
+   CONSTANT SIZE    =   2597    ----
+   XDATA SIZE       =    295     238
+C51 COMPILER V9.52.0.0   USBHOSTHUB_KM                                                     11/02/2017 16:18:18 PAGE 5   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  6 WARNING(S),  0 ERROR(S)
